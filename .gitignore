@@ -1,0 +1,5 @@
+*.sh
+.env
+*.node_modules
+*.env
+  
