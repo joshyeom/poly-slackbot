@@ -30,7 +30,7 @@ app.command('/저녁', async ({ ack, body, say, logger }) => {
     text: "저녁 드실 분~"
   });
   
-  dinnerMessageTs = result.ts; // Save the message timestamp
+  dinnerMessageTs = result.ts;
 });
 
 app.event('reaction_added', async ({ event, client }) => {
@@ -42,8 +42,10 @@ app.event('reaction_added', async ({ event, client }) => {
           user: event.user
         });
         
-        member.add(userInfo.user.real_name);
-        console.log(member)
+        member.add({
+          id: event.user,
+          name: userInfo.user.real_name
+        });
       }
     } catch (error) {
       console.error('Error:', error);
@@ -57,17 +59,13 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
     const interestedArray = Array.from(member);
     const randomMember = interestedArray[Math.floor(Math.random() * interestedArray.length)];
     
-    const userInfo = await client.users.info({
-      user: randomMember
-    });
-    
     await say({
       blocks: [
         {
           "type": "section",
           "text": {
             "type": "mrkdwn",
-            "text": `🎉 ${userInfo.user.real_name}님이 선택되었습니다! 메뉴를 골라주세요~`
+            "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
           }
         }
       ]
@@ -82,9 +80,11 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
   }
 })
 
-(async () => {
+const start = async () => {
   // Start your app
   await app.start();
 
   console.log('⚡️ 슬랙 봇 실행중 !');
-})();
+};
+
+start();
