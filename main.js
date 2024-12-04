@@ -16,14 +16,13 @@ app.command('/저녁', async ({ ack, body, say, logger }) => {
   
   member.clear();
   
-  // Store the message info when sending
   const result = await say({
     blocks: [
       {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": "저녁 드실 분~ (✅ 이모지를 눌러주세요!)"
+          "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
         }
       }
     ],
@@ -34,7 +33,6 @@ app.command('/저녁', async ({ ack, body, say, logger }) => {
 });
 
 app.event('reaction_added', async ({ event, client }) => {
-  // Only handle reactions to our dinner message
   if (event.item.ts === dinnerMessageTs) {
     try {
       if (event.reaction === 'white_check_mark') {
@@ -43,7 +41,6 @@ app.event('reaction_added', async ({ event, client }) => {
         });
         
         member.add({
-          id: event.user,
           name: userInfo.user.real_name
         });
       }
@@ -53,11 +50,38 @@ app.event('reaction_added', async ({ event, client }) => {
   }
 });
 
+app.event('reaction_removed', async ({ event, client }) => {
+  if (event.item.ts === dinnerMessageTs) {
+    try {
+      if (event.reaction === 'white_check_mark') {
+        const userInfo = await client.users.info({
+          user: event.user
+        });
+        
+        member.forEach(m => {
+          if (m.name === userInfo.user.real_name) {
+            member.delete(m);
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+});
+
 app.command('/뽑기', async ({ ack, say, body, client }) => {
   await ack();
+
+  if (member.size === 0) {
+    await say("저녁 드실 분이 없습니다!");
+    return;
+  }
+
   try {
-    const interestedArray = Array.from(member);
-    const randomMember = interestedArray[Math.floor(Math.random() * interestedArray.length)];
+    const memberArray = Array.from(member);
+    const randomMember = memberArray[Math.floor(Math.random() * memberArray.length)];
     
     await say({
       blocks: [
@@ -67,21 +91,20 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
             "type": "mrkdwn",
             "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
           }
-        }
-      ]
+        },
+      ],
+      text: `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
     });
     
-    // Clear the list after picking
     member.clear();
 
   } catch (error) {
     console.error('Error:', error);
-    await say("오류가 발생했습니다. 다시 시도해주세요. 🙏");
+    await say("오류 발생 !");
   }
 })
 
 const start = async () => {
-  // Start your app
   await app.start();
 
   console.log('⚡️ 슬랙 봇 실행중 !');
