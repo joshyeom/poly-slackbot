@@ -86,7 +86,7 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
 
   if (member.size === 0) {
     await client.chat.postMessage({
-      channel: body.user.id,
+      channel: body.user_id,
       text: "저녁 드실 분이 없습니다!"
     });
     return
@@ -102,7 +102,7 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
           "type": "section",
           "text": {
             "type": "mrkdwn",
-            "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세��~`
+            "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
           }
         },
       ],
@@ -156,30 +156,30 @@ app.command('/메뉴추가', async ({ ack, client, body }) => {
                 {
                   text: {
                     type: 'plain_text',
-                    text: '한��'
+                    text: '한식'
                   },
-                  value: 'korean'
+                  value: '한식'
                 },
                 {
                   text: {
                     type: 'plain_text',
                     text: '중식'
                   },
-                  value: 'chinese'
+                  value: '중식'
                 },
                 {
                   text: {
                     type: 'plain_text',
                     text: '일식'
                   },
-                  value: 'japanese'
+                  value: '일식'
                 },
                 {
                   text: {
                     type: 'plain_text',
                     text: '양식'
                   },
-                  value: 'western'
+                  value: '양식'
                 },
               ]
             },
@@ -203,24 +203,22 @@ app.command('/메뉴추가', async ({ ack, client, body }) => {
 
 app.view('menu_submission', async ({ ack, body, view, client }) => {
   await ack();
-  
-  
 
   try {
-    // Get values from the submitted form
     const values = view.state.values;
     const itemName = values.item_name.item_name_input.value;
     const category = values.category.category_input.selected_option.value;
+    console.log(client)
+    const userName = client.userInfo.user.real_name;
+    
 
     const checkQuery = 'SELECT COUNT(*) AS count FROM lunch_menu WHERE item_name = ?';
     const [rows] = await pool.execute(checkQuery, [itemName]);
     
     if (rows[0].count === 0) {
-      // Insert the item if it doesn't exist
-      const insertQuery = 'INSERT INTO lunch_menu (item_name, category) VALUES (?, ?)';
-      await pool.execute(insertQuery, [itemName, category]);
+      const insertQuery = 'INSERT INTO lunch_menu (item_name, category, user_name) VALUES (?, ?, ?)';
+      await pool.execute(insertQuery, [itemName, category, userName]);
     } else {
-      // Handle the case where the item already exists
       await client.chat.postMessage({
         channel: body.user.id,
         text: '❌ 이미 존재하는 메뉴입니다.'
@@ -229,10 +227,8 @@ app.view('menu_submission', async ({ ack, body, view, client }) => {
     }
 
 
-    // Update query to match your table structure
-    const query = 'INSERT INTO lunch_menu (item_name, category) VALUES (?, ?)';
+    const query = 'INSERT INTO lunch_menu (item_name, category, user_name) VALUES (?, ?, ?)';
 
-    // Send confirmation message to the user
     await client.chat.postMessage({
       channel: body.user.id,
       text: `✅ 새로운 메뉴가 추가되었습니다!\n*메뉴:* ${itemName}\n*카테고리:* ${category}`
@@ -256,11 +252,10 @@ app.command('/점심추천', async ({ ack, client, body }) => {
     if (rows.length === 0) {
       await client.chat.postMessage({
         channel: body.user_id,
-        text: '❌ 추천할 메뉴가 없습니다. 메뉴를 추가해주세요!'
+        text: '❌ 추천할 메뉴가 없습니다. 메뉴 추가해주세요!'
       });
       return;
     }
-
 
     const randomMenu = rows[0];
 
@@ -275,6 +270,63 @@ app.command('/점심추천', async ({ ack, client, body }) => {
       text: '❌ 데이터베이스 오류가 발생했습니다.'
     });
   }
+});
+
+app.command('/메뉴', async ({ ack, client, body }) => {
+  await ack();
+
+  try {
+    const query = 'SELECT item_name, category FROM lunch_menu';
+    const [rows] = await pool.execute(query);
+
+    const groupedItems = rows.reduce((acc, row) => {
+      if (!acc[row.category]) {
+        acc[row.category] = [];
+      }
+      acc[row.category].push(row.item_name);
+      return acc;
+    }, {});
+
+    const blocks = [];
+    for (const [category, items] of Object.entries(groupedItems)) {
+      blocks.push({
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: category
+        }
+      });
+      items.forEach(item => {
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*${item}*`
+          },
+        });
+      });
+    }
+
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: {
+        type: 'modal',
+        callback_id: 'menu_view',
+        title: {
+          type: 'plain_text',
+          text: 'Lunch Menu'
+        },
+        blocks: blocks,
+        close: {
+          type: 'plain_text',
+          text: 'Close'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+
 });
 
 const start = async () => {
