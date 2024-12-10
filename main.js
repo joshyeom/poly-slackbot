@@ -208,8 +208,7 @@ app.view('menu_submission', async ({ ack, body, view, client }) => {
     const values = view.state.values;
     const itemName = values.item_name.item_name_input.value;
     const category = values.category.category_input.selected_option.value;
-    console.log(client)
-    const userName = client.userInfo.user.real_name;
+    const userName = body.user.name;
     
 
     const checkQuery = 'SELECT COUNT(*) AS count FROM lunch_menu WHERE item_name = ?';

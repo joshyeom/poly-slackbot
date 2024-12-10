@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon main.js"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +13,8 @@
     "@slack/bolt": "^4.1.1",
     "dotenv": "^16.4.7",
     "mysql2": "^3.11.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
   }
 }
