@@ -20,26 +20,31 @@ const member = new Set();
 
 let dinnerMessageTs = null;
 
-app.command('/저녁', async ({ ack, body, say, logger }) => {
-  await ack();
-  
-  member.clear();
-  
-  const result = await say({
-    blocks: [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
-        }
-      }
-    ],
-    text: "저녁 드실 분~"
-  });
-  
-  dinnerMessageTs = result.ts;
+const scehdule = require('node-schedule');
+
+
+scehdule.scheduleJob('15 9 * * 1-5', async () => {
+  try {
+      const result = await app.client.chat.postMessage({
+          channel: 'C07TJLG6YHL',  
+          blocks: [
+              {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
+                  }
+              }
+          ],
+          text: "저녁 드실 분~"
+      });
+      
+      dinnerMessageTs = result.ts;
+  } catch (error) {
+      console.error('Error sending message:', error);
+  }
 });
+
 
 app.event('reaction_added', async ({ event, client }) => {
   if (event.item.ts === dinnerMessageTs) {
