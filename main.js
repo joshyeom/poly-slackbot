@@ -16,105 +16,87 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN
 });
 
-const member = new Set();
+const scehdule = require('node-schedule');
 
 let dinnerMessageTs = null;
 
-app.command('/저녁', async ({ ack, body, say, logger }) => {
-  await ack();
-  
-  member.clear();
-  
-  const result = await say({
-    blocks: [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
-        }
-      }
-    ],
-    text: "저녁 드실 분~"
-  });
-  
-  dinnerMessageTs = result.ts;
-});
-
-app.event('reaction_added', async ({ event, client }) => {
-  if (event.item.ts === dinnerMessageTs) {
-    try {
-      if (event.reaction === 'white_check_mark') {
-        const userInfo = await client.users.info({
-          user: event.user
-        });
-        
-        member.add({
-          name: userInfo.user.real_name
-        });
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  }
-});
-
-app.event('reaction_removed', async ({ event, client }) => {
-  if (event.item.ts === dinnerMessageTs) {
-    try {
-      if (event.reaction === 'white_check_mark') {
-        const userInfo = await client.users.info({
-          user: event.user
-        });
-        
-        member.forEach(m => {
-          if (m.name === userInfo.user.real_name) {
-            member.delete(m);
-          }
-        });
-      }
-
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  }
-});
-
-app.command('/뽑기', async ({ ack, say, body, client }) => {
-  await ack();
-
-
-  if (member.size === 0) {
-    await client.chat.postMessage({
-      channel: body.user_id,
-      text: "저녁 드실 분이 없습니다!"
-    });
-    return
-  }
-
+scehdule.scheduleJob('15 9 * * 1-5', async () => {
   try {
-    const memberArray = Array.from(member);
-    const randomMember = memberArray[Math.floor(Math.random() * memberArray.length)];
-    
-    await say({
-      blocks: [
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
-          }
-        },
-      ],
-      text: `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
-    });
-    
-    member.clear();
-
+      const result = await app.client.chat.postMessage({
+          channel: 'C07TJLG6YHL',  
+          blocks: [
+              {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
+                  }
+              }
+          ],
+          text: "저녁 드실 분~"
+      });
+      
+      dinnerMessageTs = result.ts;
   } catch (error) {
-    await say("오류 발생 !");
+      console.error('Error sending message:', error);
   }
-})
+});
+
+  app.command('/뽑기', async ({ ack, say, body, client }) => {
+    await ack();
+
+    if (!dinnerMessageTs) {
+      await client.chat.postMessage({
+        channel: body.user_id,
+        text: "먼저 /저녁 명령어를 실행해주세요!"
+      });
+      return;
+    }
+
+    try {
+      const result = await client.reactions.get({
+        channel: body.channel_id,
+        timestamp: dinnerMessageTs
+      });
+
+      const reactions = result.message.reactions || [];
+      const checkMarkReaction = reactions.find(r => r.name === 'white_check_mark');
+      
+      if (!checkMarkReaction || checkMarkReaction.count === 0) {
+        await client.chat.postMessage({
+          channel: body.user_id,
+          text: "저녁 드실 분이 없습니다!"
+        });
+        return;
+      }
+
+      // Get random user from the reactors
+      const users = checkMarkReaction.users;
+      const randomUser = users[Math.floor(Math.random() * users.length)];
+      
+      // Get user info
+      const userInfo = await client.users.info({
+        user: randomUser
+      });
+
+      await say({
+        blocks: [
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": `🎉 ${userInfo.user.real_name}님이 선택되었습니다! 메뉴를 골라주세요~`
+            }
+          },
+        ],
+        text: `🎉 ${userInfo.user.real_name}님이 선택되었습니다! 메뉴를 골라주세요~`
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      await say("오류 발생 !");
+    } 
+  });
 
 app.command('/메뉴추가', async ({ ack, client, body }) => {
   await ack();
