@@ -24,6 +24,8 @@ const scehdule = require('node-schedule');
 
 
 scehdule.scheduleJob('15 9 * * 1-5', async () => {
+
+  member.clear()
   try {
       const result = await app.client.chat.postMessage({
           channel: 'C07TJLG6YHL',  
@@ -85,6 +87,43 @@ app.event('reaction_removed', async ({ event, client }) => {
   }
 });
 
+app.command('/뽑기', async ({ ack, client, body }) => {
+  await ack();
+  try {
+    if (member.size === 0) {
+        await client.chat.postMessage({
+        channel: 'C07TJLG6YHL',
+        text: "저녁 드실 분이 없습니다!"
+      });
+      return
+    }
+
+  try {
+    const memberArray = Array.from(member);
+    const randomMember = memberArray[Math.floor(Math.random() * memberArray.length)];
+    
+    await say({
+      blocks: [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
+          }
+        },
+      ],
+      text: `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
+    });
+    
+  } catch (error) {
+    await say("오류 발생 !");
+    };
+  } catch (error) {
+    console.error('Error:', error);
+  }
+});
+
+
 scehdule.scheduleJob('00 17 * * 1-5', async () => {
   try {
     if (member.size === 0) {
@@ -112,8 +151,6 @@ scehdule.scheduleJob('00 17 * * 1-5', async () => {
       text: `🎉 ${randomMember.name}님이 선택되었습니다! 메뉴를 골라주세요~`
     });
     
-    member.clear();
-
   } catch (error) {
     await say("오류 발생 !");
     };
@@ -187,6 +224,13 @@ app.command('/메뉴추가', async ({ ack, client, body }) => {
                   },
                   value: '양식'
                 },
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: '기타 메뉴'
+                  },
+                  value: '기타 메뉴'
+                },
               ]
             },
             label: {
@@ -216,6 +260,15 @@ app.view('menu_submission', async ({ ack, body, view, client }) => {
     const category = values.category.category_input.selected_option.value;
     const userName = body.user.name;
     
+    if(userName === "hyemi.choi" || userName === "jm.kim"){
+      await client.chat.postMessage({
+        channel: body.user.id,
+        text: '❌ 벤입니다 ㅅㄱ'
+      });
+      return;
+    }
+
+
 
     const checkQuery = 'SELECT COUNT(*) AS count FROM lunch_menu WHERE item_name = ?';
     const [rows] = await pool.execute(checkQuery, [itemName]);
@@ -248,8 +301,7 @@ app.view('menu_submission', async ({ ack, body, view, client }) => {
   }
 });
 
-app.command('/점심추천', async ({ ack, client, body }) => {
-  await ack();
+scehdule.scheduleJob('00 11 * * 1-5', async () => {
   const query = 'SELECT * FROM lunch_menu ORDER BY RAND() LIMIT 1';
   try {
     const [rows] = await pool.execute(query);
