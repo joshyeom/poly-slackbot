@@ -124,7 +124,7 @@ app.command('/뽑기', async ({ ack, client, body }) => {
 });
 
 
-scehdule.scheduleJob('00 17 * * 1-5', async () => {
+scehdule.scheduleJob('45 16 * * 1-5', async () => {
   try {
     if (member.size === 0) {
         await client.chat.postMessage({
