@@ -85,17 +85,15 @@ app.event('reaction_removed', async ({ event, client }) => {
   }
 });
 
-app.command('/뽑기', async ({ ack, say, body, client }) => {
-  await ack();
-
-
-  if (member.size === 0) {
-    await client.chat.postMessage({
-      channel: body.user_id,
-      text: "저녁 드실 분이 없습니다!"
-    });
-    return
-  }
+scehdule.scheduleJob('00 17 * * 1-5', async () => {
+  try {
+    if (member.size === 0) {
+        await client.chat.postMessage({
+        channel: 'C07TJLG6YHL',
+        text: "저녁 드실 분이 없습니다!"
+      });
+      return
+    }
 
   try {
     const memberArray = Array.from(member);
@@ -118,8 +116,11 @@ app.command('/뽑기', async ({ ack, say, body, client }) => {
 
   } catch (error) {
     await say("오류 발생 !");
+    };
+  } catch (error) {
+    console.error('Error:', error);
   }
-})
+});
 
 app.command('/메뉴추가', async ({ ack, client, body }) => {
   await ack();
