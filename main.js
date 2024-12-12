@@ -340,6 +340,37 @@ scehdule.scheduleJob('00 11 * * 1-5', async () => {
   }
 });
 
+
+app.command('/점심추천', async ({ ack, client, body }) => {
+  await ack();
+
+  const query = 'SELECT * FROM lunch_menu ORDER BY RAND() LIMIT 1';
+  try {
+    const [rows] = await pool.execute(query);
+
+    if (rows.length === 0) {
+      await client.chat.postMessage({
+        channel: body.user_id,
+        text: '❌ 추천할 메뉴가 없습니다. 메뉴 추가해주세요!'
+      });
+      return;
+    }
+
+    const randomMenu = rows[0];
+
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: ` 오늘의 점심 추천 메뉴는 🍴${randomMenu.item_name}🍴입니다!`
+    });
+  } catch (error) {
+    console.error('Database Query Error:', error);
+    await client.chat.postMessage({
+      channel: body.user_id,
+      text: '❌ 데이터베이스 오류가 발생했습니다.'
+    });
+  }
+});
+
 app.command('/메뉴', async ({ ack, client, body }) => {
   await ack();
 
