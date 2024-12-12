@@ -260,6 +260,17 @@ app.view('menu_submission', async ({ ack, body, view, client }) => {
     const category = values.category.category_input.selected_option.value;
     const userName = body.user.name;
     
+    const isKorean = (text) => /^[가-힣\s]+$/.test(text);
+    
+    // Check if input is not Korean
+    if (!isKorean(itemName)) {
+      await client.chat.postMessage({
+        channel: body.user.id,
+        text: '❌ 한글만 입력 가능합니다.'
+      });
+      return;
+    }
+
     if(userName === "hyemi.choi" || userName === "jm.kim"){
       await client.chat.postMessage({
         channel: body.user.id,
