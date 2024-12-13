@@ -47,6 +47,30 @@ scehdule.scheduleJob('15 9 * * 1-5', async () => {
   }
 });
 
+app.command('/저녁', async ({ ack, client, body }) => {
+  await ack();
+  member.clear()
+  try {
+      const result = await app.client.chat.postMessage({
+          channel: 'C07TJLG6YHL',  
+          blocks: [
+              {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "저녁 드실 분은 5시 전까지 ✅ 이모지를 눌러주세요!"
+                  }
+              }
+          ],
+          text: "저녁 드실 분~"
+      });
+      
+      dinnerMessageTs = result.ts;
+  } catch (error) {
+      console.error('Error sending message:', error);
+  }
+});
+
 
 app.event('reaction_added', async ({ event, client }) => {
   if (event.item.ts === dinnerMessageTs) {
@@ -124,7 +148,7 @@ app.command('/뽑기', async ({ ack, client, body }) => {
 });
 
 
-scehdule.scheduleJob('45 16 * * 1-5', async () => {
+scehdule.scheduleJob('40 16 * * 1-5', async () => {
   try {
     if (member.size === 0) {
         await client.chat.postMessage({
